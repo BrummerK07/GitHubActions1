@@ -1,0 +1,91 @@
+name: Tamagotchi Commit Pet
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows manual feeding/leveling from the Actions tab
+
+jobs:
+  update-pet:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push the updated README back to the repo
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Feed and Evolve Pet
+        run: |
+          README_FILE="README.md"
+          
+          # 1. Read current stats or set defaults if it's a brand new pet
+          if grep -q "Level:" "$README_FILE"; then
+            CURRENT_LVL=$(grep "Level:" "$README_FILE" | grep -o '[0-9]\+')
+            CURRENT_XP=$(grep "XP:" "$README_FILE" | grep -o '[0-9]\+')
+          else
+            CURRENT_LVL=1
+            CURRENT_XP=0
+          fi
+          
+          # 2. Add XP for the new activity
+          NEW_XP=$((CURRENT_XP + 15))
+          NEW_LVL=$CURRENT_LVL
+          
+          # Level up condition (every 50 XP)
+          if [ $NEW_XP -ge 50 ]; then
+            NEW_LVL=$((CURRENT_LVL + 1))
+            NEW_XP=$((NEW_XP - 50))
+            EVOLVED=true
+          fi
+          
+          # 3. Determine Pet Form and Mood based on Level
+          if [ $NEW_LVL -le 2 ]; then
+            PET_ART="  🌱\n (•‿•) \n <)  )🧱\n  /  \\"
+            PET_STAGE="Baby Code-Blob"
+            MOOD="Hungry for syntax"
+          elif [ $NEW_LVL -le 5 ]; then
+            PET_ART="  🦖\n (o_O) \n /|  |\\ \n  /  \\"
+            PET_STAGE="Juvenile Script-Saurus"
+            MOOD="Thriving on optimization"
+          else
+            PET_ART="  🐉\n (🕶️_🕶️) \n /(💽)\\ \n  /  \\"
+            PET_STAGE="Ancient Cloud Dragon"
+            MOOD="Transcended into production"
+          fi
+          
+          # 4. Generate the new status card
+          NEW_ZONE=$(cat <<EOF
+          <!-- START_PET_ZONE -->
+          \`\`\`text
+          $PET_ART
+          
+          Name:   Git-Monster
+          Stage:  $PET_STAGE
+          Level:  $NEW_LVL ⭐
+          XP:     $NEW_XP / 50 🔋
+          Mood:   $MOOD
+          \`\`\`
+          _Last fed via Git action on: $(date -u +'%Y-%m-%d %H:%M UTC')_
+          <!-- END_PET_ZONE -->
+          EOF
+          )
+          
+          # 5. Use perl to replace the block in the README file cleanly
+          perl -0777 -pi -e "s/<!-- START_PET_ZONE -->.*?<!-- END_PET_ZONE -->/$(echo "$NEW_ZONE" | sed 's/\//\\\//g')/s" "$README_FILE"
+          
+          echo "Pet updated: Level $NEW_LVL, XP $NEW_XP"
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are actual changes before committing to avoid empty commit errors
+          if ! git diff --exit-code README.md; then
+            git add README.md
+            git commit -m "🤖 Chore: Fed the repository pet [skip ci]"
+            git push
+          else
+            echo "No changes to pet stats."
+          fi
