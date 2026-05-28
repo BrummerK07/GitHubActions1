@@ -1,0 +1,68 @@
+name: Fun Dev Center
+
+on:
+  push:
+    branches: [ "main" ]
+  issues:
+    types: [ opened ]
+  workflow_dispatch: # Allows you to run this manually from the Actions tab
+
+jobs:
+  entertainment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Say Hello & Check Context
+        run: |
+          echo "========================================="
+          echo "🚀 Welcome to the Fun GitHub Action Zone! 🚀"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Event type: ${{ github.event_name }}"
+          echo "========================================="
+
+      - name: Fetch a Chuck Norris Coding Joke
+        run: |
+          echo "🤖 Fetching legendary dev wisdom..."
+          # Fetch a random joke from the curated Chuck Norris API filtered for nerds
+          JOKE=$(curl -s "https://api.chucknorris.io/jokes/random?category=dev" | jq -r '.value')
+          
+          if [ -z "$JOKE" ] || [ "$JOKE" == "null" ]; then
+            JOKE="Chuck Norris can unit test entire applications with a single eye blink."
+          fi
+          
+          echo ""
+          echo "------------------------------------------------------------"
+          echo " CHUCK NORRIS DEV FACT: "
+          echo "------------------------------------------------------------"
+          echo "$JOKE"
+          echo "------------------------------------------------------------"
+          echo ""
+
+      - name: Roll a 20-Sided Die (D20)
+        run: |
+          echo "🎲 Rolling for initiative..."
+          ROLL=$((1 + RANDOM % 20))
+          echo "You rolled a: $ROLL"
+          
+          if [ $ROLL -eq 20 ]; then
+            echo "🏆 CRITICAL HIT! Your code compiles on the first try without warnings."
+          elif [ $ROLL -le 5 ]; then
+            echo "💥 CRITICAL FAIL! A rogue semicolon has hidden itself in your production environment."
+          else
+            echo "⚔️ Regular roll. Proceed with standard cautious optimization."
+          fi
+
+      - name: ASCII Art Finale
+        run: |
+          echo "✨ Workflow complete! Here is a celebratory binary cup of coffee:"
+          echo ""
+          echo "    (  )   (   )  )"
+          echo "     ) (   )  (  ("
+          echo "     ______       __"
+          echo "    |      |__   / /"
+          echo "    |  01  |  | / / "
+          echo "    |  10  |--|/ /  "
+          echo "    |______|____/   "
+          echo "    ================"
+          echo ""
+          echo "Keep building awesome things!"
